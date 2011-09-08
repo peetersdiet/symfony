@@ -313,7 +313,7 @@ class XmlFileLoader extends FileLoader
                 if (($extension = $this->container->getExtension($items[$i])) && false !== $extension->getXsdValidationBasePath()) {
                     $path = str_replace($extension->getNamespace(), str_replace('\\', '/', $extension->getXsdValidationBasePath()).'/', $items[$i + 1]);
 
-                    if (!file_exists($path)) {
+                    if (!is_file($path)) {
                         throw new \RuntimeException(sprintf('Extension "%s" references a non-existent XSD file "%s"', get_class($extension), $path));
                     }
 
@@ -326,10 +326,10 @@ class XmlFileLoader extends FileLoader
         $imports = '';
         foreach ($schemaLocations as $namespace => $location) {
             $parts = explode('/', $location);
-            if (preg_match('#^phar://#i', $location)) {
+            if (0 === stripos($location, 'phar://')) {
                 $tmpfile = tempnam(sys_get_temp_dir(), 'sf2');
                 if ($tmpfile) {
-                    file_put_contents($tmpfile, file_get_contents($location));
+                    copy($location, $tmpfile);
                     $tmpfiles[] = $tmpfile;
                     $parts = explode('/', str_replace('\\', '/', $tmpfile));
                 }

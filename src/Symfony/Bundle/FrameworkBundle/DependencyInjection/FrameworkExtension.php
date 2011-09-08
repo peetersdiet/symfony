@@ -194,8 +194,10 @@ class FrameworkExtension extends Extension
 
         // Choose storage class based on the DSN
         $supported = array(
-            'sqlite' => 'Symfony\Component\HttpKernel\Profiler\SqliteProfilerStorage',
-            'mysql'  => 'Symfony\Component\HttpKernel\Profiler\MysqlProfilerStorage',
+            'sqlite'  => 'Symfony\Component\HttpKernel\Profiler\SqliteProfilerStorage',
+            'mysql'   => 'Symfony\Component\HttpKernel\Profiler\MysqlProfilerStorage',
+            'file'    => 'Symfony\Component\HttpKernel\Profiler\FileProfilerStorage',
+            'mongodb' => 'Symfony\Component\HttpKernel\Profiler\MongoDbProfilerStorage',
         );
         list($class, ) = explode(':', $config['dsn']);
         if (!isset($supported[$class])) {
@@ -548,7 +550,7 @@ class FrameworkExtension extends Extension
 
         foreach ($container->getParameter('kernel.bundles') as $bundle) {
             $reflection = new \ReflectionClass($bundle);
-            if (file_exists($file = dirname($reflection->getFilename()).'/Resources/config/validation.xml')) {
+            if (is_file($file = dirname($reflection->getFilename()).'/Resources/config/validation.xml')) {
                 $files[] = realpath($file);
                 $container->addResource(new FileResource($file));
             }
@@ -563,7 +565,7 @@ class FrameworkExtension extends Extension
 
         foreach ($container->getParameter('kernel.bundles') as $bundle) {
             $reflection = new \ReflectionClass($bundle);
-            if (file_exists($file = dirname($reflection->getFilename()).'/Resources/config/validation.yml')) {
+            if (is_file($file = dirname($reflection->getFilename()).'/Resources/config/validation.yml')) {
                 $files[] = realpath($file);
                 $container->addResource(new FileResource($file));
             }
