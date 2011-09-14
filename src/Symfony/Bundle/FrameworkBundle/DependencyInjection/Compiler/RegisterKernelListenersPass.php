@@ -70,11 +70,7 @@ class RegisterKernelListenersPass implements CompilerPassInterface
                 throw new \InvalidArgumentException(sprintf('Service "%s" must be an instance of %s.', $id, $connectorClass));
             }
             
-            if (empty($attributes) || empty($attributes[0]['listener'])) {
-                if (!$connectorDefinition->hasMethodCall('setListener')) {
-                
-                }
-            } else {
+            if (!empty($attributes) && !empty($attributes[0]['listener'])) {
                 $arguments = array(
                     new Reference('service_container'), 
                     $attributes[0]['listener']
