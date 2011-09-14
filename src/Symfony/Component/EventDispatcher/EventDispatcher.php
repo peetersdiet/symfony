@@ -132,7 +132,27 @@ class EventDispatcher implements EventDispatcherInterface
         }
     }
 
-    /**
+    public function addConnector(Connector $connector)
+    {
+        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
+            if (is_string($params)) {
+                $this->addListener($eventName, array($connector, $params));
+            } else {
+                $this->addListener($eventName, array($connector, $params[0]), $params[1]);
+            }
+        }
+        $connector->setEventDispatcher($this);
+    }
+    
+    public function removeConnector(Connector $connector)
+    {
+        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
+            $this->removeListener($eventName, array($connector, is_string($params) ? $params : $params[0]));
+        }
+        $connector->removeEventDispatcher();
+    }
+
+	/**
      * Triggers the listeners of an event.
      *
      * This method can be overridden to add functionality that is executed

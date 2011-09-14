@@ -12,6 +12,8 @@
 namespace Symfony\Bundle\FrameworkBundle\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\ServiceStub;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 
@@ -42,6 +44,44 @@ class RegisterKernelListenersPass implements CompilerPassInterface
 
                 $definition->addMethodCall('addListenerService', array($event['event'], array($id, $event['method']), $priority));
             }
+        }
+
+        foreach ($container->findTaggedServiceIds('kernel.event_subscriber') as $id => $attributes) {
+            // We must assume that the class value has been correcly filled, even if the service is created by a factory
+            $class = $container->getDefinition($id)->getClass();
+
+            $refClass = new \ReflectionClass($class);
+            $interface = 'Symfony\Component\EventDispatcher\EventSubscriberInterface';
+            if (!$refClass->implementsInterface($interface)) {
+                throw new \InvalidArgumentException(sprintf('Service "%s" must implement interface "%s".', $id, $interface));
+            }
+
+            $definition->addMethodCall('addSubscriberService', array($id, $class));
+        }
+        
+        foreach ($container->findTaggedServiceIds('kernel.event_connector') as $id => $attributes) {
+            // We must assume that the class value has been correcly filled, even if the service is created by a factory
+            $connectorDefinition = $container->getDefinition($id);
+            $class = $connectorDefinition->getClass();
+            
+            $refClass = new \ReflectionClass($class);
+            $connectorClass = 'Symfony\Component\EventDispatcher\Connector';
+            if ($connectorClass != $refClass->name && !$refClass->isSubclassOf($connectorClass)) {
+                throw new \InvalidArgumentException(sprintf('Service "%s" must be an instance of %s.', $id, $connectorClass));
+            }
+            
+            if (empty($attributes) || empty($attributes[0]['listener'])) {
+                if (!$connectorDefinition->hasMethodCall('setListener')) {
+                
+                }
+            } else {
+                $arguments = array(
+                    new Reference('service_container'), 
+                    $attributes[0]['listener']
+                ); 
+                $connectorDefinition->addMethodCall('setListener', array(new Definition('Symfony\Component\DependencyInjection\ServiceStub', $arguments)));
+            }
+            $definition->addMethodCall('addConnectorService', array($id, $class));
         }
     }
 }
