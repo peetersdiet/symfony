@@ -73,6 +73,23 @@ interface EventDispatcherInterface
     function removeSubscriber(EventSubscriberInterface $subscriber);
 
     /**
+     * Adds a connector. The connector provides a list of events to the
+     * eventdispatcher which are coupled to the (one) listener associated
+     * with the connector. 
+     * 
+     * @param Connector $connector the connector instance
+     */
+    function addConnector(Connector $connector);
+    
+    /**
+     * Removes the (one) listener associated with the connector from the 
+     * specified events.
+     * 
+     * @param Connector $connector
+     */
+    function removeConnector(Connector $connector);
+    
+    /**
      * Gets the listeners of a specific event or all listeners.
      *
      * @param string $eventName The name of the event.

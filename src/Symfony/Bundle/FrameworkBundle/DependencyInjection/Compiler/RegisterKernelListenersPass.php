@@ -77,7 +77,7 @@ class RegisterKernelListenersPass implements CompilerPassInterface
                 ); 
                 $connectorDefinition->addMethodCall('setListener', array(new Definition('Symfony\Component\DependencyInjection\ServiceStub', $arguments)));
             }
-            $definition->addMethodCall('addConnectorService', array($id, $class));
+            $definition->addMethodCall('addConnectorService', array($id));
         }
     }
 }

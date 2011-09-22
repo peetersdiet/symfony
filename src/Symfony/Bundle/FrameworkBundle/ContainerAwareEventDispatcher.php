@@ -22,6 +22,7 @@ use Symfony\Component\EventDispatcher\Event;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Bernhard Schussek <bernhard.schussek@symfony.com>
  * @author Jordan Alliot <jordan.alliot@gmail.com>
+ * @author Dieter Peeters <peetersdiet@gmail.com>
  */
 class ContainerAwareEventDispatcher extends EventDispatcher
 {
@@ -130,7 +131,14 @@ class ContainerAwareEventDispatcher extends EventDispatcher
         }
     }
 
-    public function addConnectorService($serviceId, $class)
+    /**
+     * Adds a connector service
+     * 
+     * The connector should be an instance of {@see Symfony\Component\EventDispatcher\Connector}.
+     *  
+     * @param string $serviceId the identifier of the connector service
+     */
+    public function addConnectorService($serviceId)
     {
         $connector = $this->container->get($serviceId);
         $connectorClass = 'Symfony\Component\EventDispatcher\Connector';
@@ -138,13 +146,25 @@ class ContainerAwareEventDispatcher extends EventDispatcher
             throw new \InvalidArgumentException(sprintf('Service "%s" must be an instance of %s.', $serviceId, $connectorClass));
         }
         
-        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
-            if (is_string($params)) {
-                $this->listenerIds[$eventName][] = array($serviceId, $params, 0);
+        $dispatcher = $this;
+        $setter = function($eventName, $method) use ($dispatcher, $serviceId) {
+            if (is_string($method)) {
+                $dispatcher->addListenerService($eventName, array($serviceId, $method));
             } else {
-                $this->listenerIds[$eventName][] = array($serviceId, $params[0], $params[1]);
+                $dispatcher->addListenerService($eventName, array($serviceId, $method[0]), $method[1]);
+            }
+        };
+        
+        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
+            if (is_array($params) && is_array(reset($params))) {
+                foreach ($params as $param) {
+                    $setter($eventName, $param);
+                }
+            } else {
+                $setter($eventName, $params);
             }
         }
+        
         $connector->setEventDispatcher($this);
     }
     

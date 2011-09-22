@@ -23,6 +23,7 @@ namespace Symfony\Component\EventDispatcher;
  * @author  Bernhard Schussek <bschussek@gmail.com>
  * @author  Fabien Potencier <fabien@symfony.com>
  * @author  Jordi Boggiano <j.boggiano@seld.be>
+ * @author  Dieter Peeters <peetersdiet@gmail.com>
  *
  * @api
  */
@@ -132,23 +133,53 @@ class EventDispatcher implements EventDispatcherInterface
         }
     }
 
+    /**
+     * @see EventDispatcherInterface::addConnector
+     */
     public function addConnector(Connector $connector)
     {
-        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
-            if (is_string($params)) {
-                $this->addListener($eventName, array($connector, $params));
+        $dispatcher = $this;
+        $setListener = function($eventName,$method) use ($dispatcher, $connector) {
+            if (is_string($method)) {
+                $dispatcher->addListener($eventName, array($connector, $method));
             } else {
-                $this->addListener($eventName, array($connector, $params[0]), $params[1]);
+                $dispatcher->addListener($eventName, array($connector, $method[0]), $method[1]);
+            }
+        };
+        
+        foreach ($connector->getSubscribedEvents() as $eventName => $params) {
+            if (is_array($params) && is_array(reset($params))) {
+                foreach ($params as $param) {
+                    $setListener($eventName, $param);
+                }
+            } else {
+                $setListener($eventName, $params);
             }
         }
+        
         $connector->setEventDispatcher($this);
     }
     
+    /**
+     * @see EventDispatcherInterface::removeConnector
+     */
     public function removeConnector(Connector $connector)
     {
+        $dispatcher = $this;
+        $removeListener = function($eventName, $method) use ($dispatcher, $connector) {
+            $dispatcher->removeListener($eventName, array($connector, is_string($method) ?: $method[0]));
+        };
+        
         foreach ($connector->getSubscribedEvents() as $eventName => $params) {
-            $this->removeListener($eventName, array($connector, is_string($params) ? $params : $params[0]));
+            if (is_array($params) && is_array(reset($params))) {
+                foreach ($params as $param) {
+                    $removeListener($eventName, $param);
+                }
+            } else {
+                $removeListener($eventName, $params);
+            }
         }
+        
         $connector->removeEventDispatcher();
     }
 
